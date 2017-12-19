@@ -14,7 +14,10 @@ from scipy import stats
 ###Define important variables###
 ListAnalysis = ['Loc_TrainAll_TestAll']
 ListSubjects = ['lm130479', 'am150105', 'cb140229', 'nb140272', 'mj100109', 'dp150209', 
-	'ag150338']
+	'ag150338', 'ml140071', 'rm080030', 'bl160191', 'lj150477','bo160176', 'at140305', 
+	'df150397', 'rl130571', 'mm140137', 'mb160304', 'lk160274', 'av160302', 'cc150418', 
+	'cs150204', 'mp110340', 'lg160230', 'mp150285', 'ef160362', 'ml160216', 'pb160320', 
+	'cc130066', 'in110286', 'ss120102']
 
 beginTime = -0.2
 endTime = 3.496
