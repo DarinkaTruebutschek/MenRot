@@ -11,23 +11,27 @@ from scipy import stats
 from scipy.stats import wilcoxon
 
 def _loop(x, function):
+
 	out = list()
 	for ii in range(x.shape[1]):
 		out.append(function(x[:, ii]))
 	return out
 
 def _my_wilcoxon(X):
+
     out = wilcoxon(X)
     return out[1]
 
 
 def _stat_fun(x, sigma=0, method='relative'):
+
     t_values = ttest_1samp_no_p(x, sigma=sigma, method=method)
     t_values[np.isnan(t_values)] = 0
     return t_values
 
 
 def myStats(X, connectivity=None, n_jobs=-1):
+
     X = np.array(X)
     X = X[:, :, None] if X.ndim == 2 else X
     T_obs_, clusters, p_values, _ = spatio_temporal_cluster_1samp_test(X, out_type='mask', stat_fun=_stat_fun, n_permutations=5000, n_jobs=n_jobs, connectivity=connectivity)
@@ -40,6 +44,7 @@ def myStats(X, connectivity=None, n_jobs=-1):
 
 
 def parallel_stats(X, function=_my_wilcoxon, correction='FDR', n_jobs=-1, startTime=None, endTime=None):
+    
     from mne.parallel import parallel_func
 
     if correction not in [False, None, 'FDR']:
