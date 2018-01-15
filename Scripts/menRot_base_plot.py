@@ -76,7 +76,6 @@ def share_clim(axes, clim=None):
 
 def plot_widths(xs, ys, widths, ax=None, color='b', xlim=None, ylim=None,
                 **kwargs):
-
     xs, ys, widths = np.array(xs), np.array(ys), np.array(widths)
     if not (len(xs) == len(ys) == len(widths)):
         raise ValueError('xs, ys, and widths must have identical lengths')
@@ -100,6 +99,7 @@ def plot_widths(xs, ys, widths, ax=None, color='b', xlim=None, ylim=None,
         ylim = [min(ys), max(ys)]
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
+
     return ax if fig is None else fig
 
 
