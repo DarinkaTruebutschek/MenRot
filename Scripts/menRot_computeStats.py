@@ -13,15 +13,16 @@ from scipy import stats
 
 ###Define important variables###
 ListAnalysis = ['Loc_TrainAll_TestAll']
-ListSubjects = ['lm130479', 'am150105', 'am150105', 'cb140229']
-#ListSubjects = ['lm130479', 'am150105', 'cb140229', 'nb140272', 'mj100109', 'dp150209', 
-	#'ag150338', 'ml140071', 'rm080030', 'bl160191', 'lj150477','bo160176', 'at140305', 
-	#'df150397', 'rl130571', 'mm140137', 'mb160304', 'lk160274', 'av160302', 'cc150418', 
-	#'cs150204', 'mp110340', 'lg160230', 'mp150285', 'ef160362', 'ml160216', 'pb160320', 
-	#'cc130066', 'in110286', 'ss120102']
+#ListSubjects = ['lm130479', 'am150105', 'cb140229']
+ListSubjects = ['lm130479', 'am150105', 'cb140229', 'nb140272', 'mj100109', 'dp150209', 
+	'ag150338', 'ml140071', 'rm080030', 'bl160191', 'lj150477','bo160176', 'at140305', 
+	'df150397', 'rl130571', 'mm140137', 'mb160304', 'lk160274', 'av160302', 'cc150418', 
+	'cs150204', 'mp110340', 'lg160230', 'mp150285', 'ef160362', 'ml160216', 'pb160320', 
+	'cc130066', 'in110286', 'ss120102']
 
 beginTime = -0.2
 endTime = 3.496
+tail = 1 #0 = 2-sided, 1 = 1-sided
 
 chance = 0 #for analyses involving 
 
@@ -55,19 +56,19 @@ for analysis in ListAnalysis:
 			time = time[tmp :]
 
 	np.save(res_path + '/' + analysis + '-time.npy', time)
-	np.savez(res_path + '/' + analysis + '-all_scores.npy', all_scores)
+	np.save(res_path + '/' + analysis + '-all_scores.npy', all_scores)
 
 	if stat_params is 'permutation':
 		#Compute stats against theoretical chance level as obtained by permutations
 		print('computing stats based on permutation: ' + analysis)
 
-		p_values = myStats(np.array(all_scores) - chance) #p_values for entire gat (same shape as np.mean(gat))
+		p_values = myStats(np.array(all_scores) - chance, tail=tail) #p_values for entire gat (same shape as np.mean(gat))
 
 		diag_offdiag = all_scores - np.tile([np.diag(sc) for sc in all_scores], [len(time), 1, 1]).transpose(1, 0, 2)
-		p_values_off = myStats(diag_offdiag)
+		p_values_off = myStats(diag_offdiag, tail=tail)
 
 		scores_diag = [np.diag(sc) for sc in all_scores]
-		p_values_diag = myStats(np.array(scores_diag)[:, :, None] - chance)
+		p_values_diag = myStats(np.array(scores_diag)[:, :, None] - chance, tail=tail)
 
 	elif stat_params is 'Wilcoxon':
 		#Compute stats using uncorrected Wilcoxon signed-rank test
@@ -94,9 +95,9 @@ for analysis in ListAnalysis:
 		p_values_diag = parallel_stats(np.array(scores_diag) - chance, correction='FDR') 
 
 	#Save
-	np.save(res_path + '/' + analysis + '_' + stat_params + '-p_values.npy', p_values)
-	np.save(res_path + '/' + analysis + '_' + stat_params + '-p_values_off.npy', p_values_off)
-	np.save(res_path + '/' + analysis + '_' + stat_params + '-p_values_diag.npy', p_values_diag)
+	np.save(res_path + '/' + analysis + '_' + stat_params + str(tail) + '-p_values.npy', p_values)
+	np.save(res_path + '/' + analysis + '_' + stat_params + str(tail) + '-p_values_off.npy', p_values_off)
+	np.save(res_path + '/' + analysis + '_' + stat_params + str(tail) + '-p_values_diag.npy', p_values_diag)
 
 
 

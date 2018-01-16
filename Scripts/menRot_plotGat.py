@@ -109,12 +109,13 @@ def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
     if scores.ndim == 2 and scores.shape[0] > 1:
         scores_m = np.mean(scores, axis=0)
         sem = scores.std(0) / np.sqrt(len(scores))
-        if smoothWindow > 0:
-			scores_m = smooth(scores_m, window=smoothWindow)
-			sem = smooth(sem, window=smoothWindow)
-			plot_sem(times, scores_m, sem, color=color, ax=ax, line_args = {'linewidth': thickness})
-        elif smoothWindow == 0:
-			plot_sem(times, scores_m, sem, color=color, ax=ax, line_args = {'linewidth': thickness})
+        plot_sem(times, scores_m, sem, color=color, ax=ax, line_args = {'linewidth': thickness})
+        #if smoothWindow > 0:
+			#scores_m = smooth(scores_m, window=smoothWindow)
+			#sem = smooth(sem, window=smoothWindow)
+			#plot_sem(times, scores_m, sem, color=color, ax=ax, line_args = {'linewidth': thickness})
+        #elif smoothWindow == 0:
+	    #plot_sem(times, scores_m, sem, color=color, ax=ax, line_args = {'linewidth': thickness})
     else:
         scores_m = np.squeeze(scores)
         sem = np.zeros_like(scores_m)

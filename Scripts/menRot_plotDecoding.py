@@ -17,12 +17,12 @@ from menRot_smooth import my_smooth
 
 ###Define important general variables###
 ListAnalysis = ['Loc_TrainAll_TestAll']
-ListSubjects = ['lm130479', 'am150105', 'cb140229']
-#ListSubjects = ['lm130479', 'am150105', 'cb140229', 'nb140272', 'mj100109', 'dp150209', 
-	#'ag150338', 'ml140071', 'rm080030', 'bl160191', 'lj150477','bo160176', 'at140305', 
-	#'df150397', 'rl130571', 'mm140137', 'mb160304', 'lk160274', 'av160302', 'cc150418', 
-	#'cs150204', 'mp110340', 'lg160230', 'mp150285', 'ef160362', 'ml160216', 'pb160320', 
-	#'cc130066', 'in110286', 'ss120102']
+#ListSubjects = ['lm130479', 'am150105', 'cb140229']
+ListSubjects = ['lm130479', 'am150105', 'cb140229', 'nb140272', 'mj100109', 'dp150209', 
+	'ag150338', 'ml140071', 'rm080030', 'bl160191', 'lj150477','bo160176', 'at140305', 
+	'df150397', 'rl130571', 'mm140137', 'mb160304', 'lk160274', 'av160302', 'cc150418', 
+	'cs150204', 'mp110340', 'lg160230', 'mp150285', 'ef160362', 'ml160216', 'pb160320', 
+	'cc130066', 'in110286', 'ss120102']
 ListTois = [[-0.2, 0], [0.1, 0.3], [0.3, 0.6], [0.6, 1.7667], [1.8667, 2.0667], [2.0667, 3.2667], [3.2667, 3.496]] #time bins for which to display slices
 
 stat_alpha = 0.05 #statistical threshold
@@ -30,6 +30,7 @@ chance = 0
 smooth = True
 smoothWindow = 2
 stat_params = 'permutation'
+tail = 0 #0 = 2-sided, 1 = 1-sided
 
 figs = list()
 table_toi = np.empty((len(ListAnalysis), len(ListTois)), dtype=object)
@@ -42,7 +43,7 @@ path = '/neurospin/meg/meg_tmp/MenRot_Truebutschek_2016/Decoding'
 
 ###Define important parameters for figure###
 contourPlot = True #regular depiction or just with contours
-fig_alldiag = plt.figure(figsize=[6.5, 11], dpi=300)
+fig_alldiag = plt.figure(figsize=[8.27, 11.69], dpi=300)
 axes_alldiag = gridspec.GridSpec(len(ListAnalysis), 1, hspace=0.1) #n_rows, n_columns
 
 ###Define colors (this will have to be facilitated)
@@ -59,7 +60,7 @@ for ii in range(len(ListTois)):
     color = np.array(cmap(float(ii)/len(ListTois)))
     my_colors[ii]['color']= color
     my_colors[ii]['cmap'] = LinearSegmentedColormap.from_list('RdBu', ['w', color, 'k'])
-
+    
 ###Plot diagonal decoding and temporal generalization for each analysis
 for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 
@@ -73,9 +74,9 @@ for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 	time = np.load(stat_path + '/' + my_analysis + '-time.npy') #load timing
 	scores = np.array(np.load(stat_path + '/' + my_analysis + '-all_scores.npy')) #load actual data 
 
-	p_values = np.load(stat_path + '/' + my_analysis + '_' + stat_params + '-p_values.npy') #load p_values for gat
-	p_values_off = np.load(stat_path + '/' + my_analysis + '_' + stat_params + '-p_values_off.npy') #load p_values for offdiag
-	p_values_diag = np.squeeze(np.load(stat_path + '/' + my_analysis + '_' + stat_params + '-p_values_diag.npy')) #load p_values for diagonal
+	p_values = np.load(stat_path + '/' + my_analysis + '_' + stat_params + str(tail) +  '-p_values.npy') #load p_values for gat
+	p_values_off = np.load(stat_path + '/' + my_analysis + '_' + stat_params + str(tail) + '-p_values_off.npy') #load p_values for offdiag
+	p_values_diag = np.squeeze(np.load(stat_path + '/' + my_analysis + '_' + stat_params + str(tail) + '-p_values_diag.npy')) #load p_values for diagonal
 
 	#Compute all other scores
 	diag_offdiag = np.array(scores - np.tile([np.diag(sc) for sc in scores], [len(time), 1, 1]).transpose(1, 0, 2))
@@ -83,7 +84,7 @@ for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 
 	###Plot GAT
 	clim = [chance, 0.1]
-	fig_gat, ax_gat = plt.subplots(1, 1, figsize=[7, 5.5])
+	fig_gat, ax_gat = plt.subplots(1, 1, figsize=[5, 4])
 
 	if smooth:
 		scores_smooth = [my_smooth(sc, smoothWindow) for sc in scores]
@@ -110,19 +111,21 @@ for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 	#ax_gat.set_yticks(np.arange(0., 3.496, .5))
 	ax_gat.set_yticklabels(['T', '0.5', '1.0', '1.5', 'C', '2.0', '2.5', '3.0', 'R'], fontdict={'family': 'arial', 'size': 12})
 
-	plt.savefig(res_path + '/' + my_analysis + '_' + stat_params + '-gat.tif', format = 'tif', dpi = 300, bbox_inches = 'tight')
+	ax_gat.set_aspect('equal')
+
+	plt.savefig(res_path + '/' + my_analysis + '_' + stat_params + str(tail) + '-gat.tif', format = 'tif', dpi = 300, bbox_inches = 'tight')
 	plt.show(fig_gat)
 	#plt.hold(False)
 
 	###Plot diagonal
-	fig_diag, ax_diag = plt.subplots(1, 1, figsize=[7, 5.5])
+	fig_diag, ax_diag = plt.subplots(1, 1, figsize=[4, 1.5])
 
 	if smooth:
 		scores_smooth = [my_smooth(sc, smoothWindow) for sc in scores_diag]
 		scores_diag = scores_smooth
 		del scores_smooth
 
-	pretty_decod(np.mean(scores_diag, axis=0), times = time, sfreq = 125, sig = p_values_diag>stat_alpha, chance = chance, 
+	pretty_decod(np.mean(scores_diag, axis=0), times = time, sfreq = 125, sig = p_values_diag<stat_alpha, chance = chance, 
 		color = my_colors[0]['color'], fill = True, ax = ax_diag)
 	
 	#Define ylim
@@ -139,7 +142,14 @@ for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 	ax_diag.set_xticklabels(['T', '0.5', '1.0', '1.5', 'C', '2.0', '2.5', '3.0', 'R'], fontdict={'family': 'arial', 'size': 12})
 
 	ax_diag.set_yticks([ylim[0], chance, ylim[1]])
-	ax_diag.set_yticklabels(['%.2f' % ylim[0], 'chance', '%.2f' % ylim[1]], fontdict={'family': 'arial', 'size': 12})
+	ax_diag.set_yticklabels(['', '', '%.2f' % ylim[1]], fontdict={'family': 'arial', 'size': 12})
 
-	plt.savefig(res_path + '/' + my_analysis + '_' + stat_params + '-diag.tif', format = 'tif', dpi = 300, bbox_inches = 'tight')
+	plt.savefig(res_path + '/' + my_analysis + '_' + stat_params + str(tail) + '-diag.tif', format = 'tif', dpi = 300, bbox_inches = 'tight')
 	plt.show(fig_diag)
+
+	###Plot slices
+	fig_offdiag, ax_offdiag = plt.subplots(len(ListTois), 1, figsize=[5, 6])
+
+	pretty_slices(scores, times = time, chance = chance, axes = ax_offdiag, sfreq = 125,
+		sig = p_values < stat_alpha, sig_diagoff = p_values_off < stat_alpha, colors = ['k', 'b', 'k', 'b', 'k', 'b', 'k', 'b'], tois = np.arange(-0.2, 3.496, 0.2), 
+		fill_color = 'yellow')
