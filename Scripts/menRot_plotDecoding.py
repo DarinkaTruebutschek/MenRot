@@ -16,7 +16,7 @@ from menRot_plotGat import pretty_gat, pretty_decod, pretty_slices
 from menRot_smooth import my_smooth
 
 ###Define important general variables###
-ListAnalysis = ['Loc_TrainAll_TestAll']
+ListAnalysis = ['Loc_TrainLoc_TestLoc']
 #ListSubjects = ['lm130479', 'am150105', 'cb140229']
 ListSubjects = ['lm130479', 'am150105', 'cb140229', 'nb140272', 'mj100109', 'dp150209', 
 	'ag150338', 'ml140071', 'rm080030', 'bl160191', 'lj150477','bo160176', 'at140305', 
@@ -24,19 +24,18 @@ ListSubjects = ['lm130479', 'am150105', 'cb140229', 'nb140272', 'mj100109', 'dp1
 	'cs150204', 'mp110340', 'lg160230', 'mp150285', 'ef160362', 'ml160216', 'pb160320', 
 	'cc130066', 'in110286', 'ss120102']
 ListTois = [[-0.2, 0], [0.1, 0.3], [0.3, 0.6], [0.6, 1.7667], [1.8667, 2.0667], [2.0667, 3.2667], [3.2667, 3.496]] #time bins for which to display slices
+BaselineCorr = False
 
 stat_alpha = 0.05 #statistical threshold
 chance = 0
 smooth = True
 smoothWindow = 2
 stat_params = 'permutation'
-tail = 0 #0 = 2-sided, 1 = 1-sided
+tail = 1 #0 = 2-sided, 1 = 1-sided
 
 figs = list()
 table_toi = np.empty((len(ListAnalysis), len(ListTois)), dtype=object)
 table_reversal = np.empty((len(ListAnalysis), 2), dtype=object)
-
-stat_params = 'permutation'
 
 #Path
 path = '/neurospin/meg/meg_tmp/MenRot_Truebutschek_2016/Decoding'
@@ -50,7 +49,7 @@ axes_alldiag = gridspec.GridSpec(len(ListAnalysis), 1, hspace=0.1) #n_rows, n_co
 def analysis(name, condition, query=None, title=None):
     return dict(name=name, condition=condition)
 
-my_colors = (analysis(name='Loc_TrainAll_TestAll', condition='loc'), analysis(name='Loc_TrainAll_TestAll', condition='loc'),
+my_colors = (analysis(name='Loc_TrainAll_TestAll', condition='loc'), analysis(name='Loc_TrainLoc_TestLoc', condition='loc'),
 	analysis(name='Loc_TrainAll_TestAll', condition='loc'), analysis(name='Loc_TrainAll_TestAll', condition='loc'),
 	analysis(name='Loc_TrainAll_TestAll', condition='loc'), analysis(name='Loc_TrainAll_TestAll', condition='loc'),
 	analysis(name='Loc_TrainAll_TestAll', condition='loc'))
@@ -64,9 +63,20 @@ for ii in range(len(ListTois)):
 ###Plot diagonal decoding and temporal generalization for each analysis
 for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 
-	dat_path = path + '/' + ListAnalysis[0] + '/IndRes'
-	stat_path = path + '/' + ListAnalysis[0] + '/GroupRes/Stats'
-	res_path = path + '/' + ListAnalysis[0] + '/GroupRes/Figures'
+	#Get index for color (this should be fixed)
+	if (my_analysis is 'Loc_TrainAll_TestAll') or (my_analysis is 'Loc_TrainRot_TestRot') or (my_analysis is 'Loc_TrainNoRot_TestNoRot'):
+		tupIndex = 0
+	elif my_analysis is 'Loc_TrainLoc_TestLoc':
+		tupIndex = 1
+
+	if BaselineCorr:
+		dat_path = path + '/' + ListAnalysis[0] + '/IndRes'
+		stat_path = path + '/' + ListAnalysis[0] + '/GroupRes/Stats'
+		res_path = path + '/' + ListAnalysis[0] + '/GroupRes/Figures'
+	else:
+		dat_path = path + '/NoBaseline/' + ListAnalysis[0] + '/IndRes'
+		stat_path = path + '/NoBaseline/' + ListAnalysis[0] + '/GroupRes/Stats'
+		res_path = path + '/NoBaseline/' + ListAnalysis[0] + '/GroupRes/Figures'
 
 	print('analysis: ' + my_analysis)
 
@@ -82,8 +92,12 @@ for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 	diag_offdiag = np.array(scores - np.tile([np.diag(sc) for sc in scores], [len(time), 1, 1]).transpose(1, 0, 2))
 	scores_diag = np.array([np.diag(sc) for sc in scores])
 
+	#Compute one-sided p_value for diagonal if original stats were done with Wilcoxon
+	if (stat_params is 'Wicoxon') and (tail == 1):
+		p_values_off = p_values_off / 2.
+		p_values_diag = p_values_diag / 2.
+
 	###Plot GAT
-	clim = [chance, 0.1]
 	fig_gat, ax_gat = plt.subplots(1, 1, figsize=[5, 4])
 
 	if smooth:
@@ -91,25 +105,36 @@ for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 		scores = scores_smooth
 		del scores_smooth
 
-	#plt.hold(True)
-	pretty_gat(np.mean(scores, axis=0), times = time, chance = chance, ax = ax_gat, sig = None, cmap = 'coolwarm',
+	if (my_analysis is 'Loc_TrainAll_TestAll') or (my_analysis is 'Loc_TrainRot_TestRot') or (my_analysis is 'Loc_TrainNoRot_TestNoRot'):
+		clim = [chance, 0.1]
+		steps = [0.025, 0.05, 0.075, 0.10, 0.125]
+	elif my_analysis is 'Loc_TrainLoc_TestLoc':
+		clim = [chance, 0.325]
+		steps = np.linspace(0.025, 0.35, 5)
+
+	pretty_gat(np.mean(scores, axis=0), times = time, chance = chance, ax = ax_gat, sig = p_values, cmap = 'coolwarm',
         clim = clim, colorbar = False, xlabel = 'Testing Time (s)', ylabel = 'Training Time (s)', sfreq = 125, diagonal = 'dimgray', test_times = None,
-        contourPlot = contourPlot, steps = [0.025, 0.05, 0.075, 0.10, 0.125]) #indicates onset of cue
-	
+        contourPlot = contourPlot, steps = steps) #indicates onset of cue
+
 	#Axes props
-	ax_gat.axvline(1.7667, color='k', linewidth=1) #indicates cue onset
-	ax_gat.axhline(1.7667, color='k', linewidth=1)
+	if (my_analysis is 'Loc_TrainAll_TestAll') or (my_analysis is 'Loc_TrainRot_TestRot') or (my_analysis is 'Loc_TrainNoRot_TestNoRot'):
+		ax_gat.axvline(1.7667, color='k', linewidth=1) #indicates cue onset
+		ax_gat.axhline(1.7667, color='k', linewidth=1)
 
-	ax_gat.axvline(3.2667, color='k', linewidth=1) #indicates response onset
-	ax_gat.axhline(3.2667, color='k', linewidth=1)
+		ax_gat.axvline(3.2667, color='k', linewidth=1) #indicates response onset
+		ax_gat.axhline(3.2667, color='k', linewidth=1)
 
-	ax_gat.set_xticks(np.sort(np.append(np.arange(0., 3.496, .5), np.array([1.776, 3.2667]))))
-	ax_gat.set_xticklabels(['T', '0.5', '1.0', '1.5', 'C', '2.0', '2.5', '3.0', 'R'], fontdict={'family': 'arial', 'size': 12})
-	#ax_gat.set_xticks(np.arange(0., 3.496, .5))
+		ax_gat.set_xticks(np.sort(np.append(np.arange(0., 3.496, .5), np.array([1.776, 3.2667]))))
+		ax_gat.set_xticklabels(['T', '0.5', '1.0', '1.5', 'C', '2.0', '2.5', '3.0', 'R'], fontdict={'family': 'arial', 'size': 12})
 
-	ax_gat.set_yticks(np.sort(np.append(np.arange(0., 3.496, .5), np.array([1.776, 3.2667]))))
-	#ax_gat.set_yticks(np.arange(0., 3.496, .5))
-	ax_gat.set_yticklabels(['T', '0.5', '1.0', '1.5', 'C', '2.0', '2.5', '3.0', 'R'], fontdict={'family': 'arial', 'size': 12})
+		ax_gat.set_yticks(np.sort(np.append(np.arange(0., 3.496, .5), np.array([1.776, 3.2667]))))
+		ax_gat.set_yticklabels(['T', '0.5', '1.0', '1.5', 'C', '2.0', '2.5', '3.0', 'R'], fontdict={'family': 'arial', 'size': 12})
+	elif my_analysis is 'Loc_TrainLoc_TestLoc': 
+		ax_gat.set_xticks(np.arange(0., 0.8, .2))
+		ax_gat.set_xticklabels(['T', '0.2', '0.4', '0.6', '0.8'], fontdict={'family': 'arial', 'size': 12})
+
+		ax_gat.set_yticks(np.arange(0., 0.8, .2))
+		ax_gat.set_yticklabels(['T', '0.2', '0.4', '0.6', '0.8'], fontdict={'family': 'arial', 'size': 12})
 
 	ax_gat.set_aspect('equal')
 
@@ -126,7 +151,7 @@ for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 		del scores_smooth
 
 	pretty_decod(np.mean(scores_diag, axis=0), times = time, sfreq = 125, sig = p_values_diag<stat_alpha, chance = chance, 
-		color = my_colors[0]['color'], fill = True, ax = ax_diag)
+		color = my_colors[tupIndex]['color'], fill = True, ax = ax_diag)
 	
 	#Define ylim
 	scores_diag = np.array(scores_diag)
@@ -135,14 +160,28 @@ for ii, (my_analysis, ax_diag) in enumerate(zip(ListAnalysis, axes_alldiag)):
 	ylim = [np.min(scores_diag.mean(0)- sem), np.max(scores_diag.mean(0) + sem)]
 	ax_diag.set_ylim(ylim)
 
-	ax_diag.axvline(1.7667, color='k', linewidth=1) #indicates cue onset
-	ax_diag.axvline(3.2667, color='k', linewidth=1) #indicates response onset
+	if (my_analysis is 'Loc_TrainAll_TestAll') or (my_analysis is 'Loc_TrainRot_TestRot') or (my_analysis is 'Loc_TrainNoRot_TestNoRot'):
+		ax_diag.axvline(1.7667, color='k', linewidth=1) #indicates cue onset
+		ax_diag.axvline(3.2667, color='k', linewidth=1) #indicates response onset
 
-	ax_diag.set_xticks(np.sort(np.append(np.arange(0., 3.496, .5), np.array([1.776, 3.2667]))))
-	ax_diag.set_xticklabels(['T', '0.5', '1.0', '1.5', 'C', '2.0', '2.5', '3.0', 'R'], fontdict={'family': 'arial', 'size': 12})
+		ax_diag.set_xticks(np.sort(np.append(np.arange(0., 3.496, .5), np.array([1.776, 3.2667]))))
+		ax_diag.set_xticklabels(['T', '0.5', '1.0', '1.5', 'C', '2.0', '2.5', '3.0', 'R'], fontdict={'family': 'arial', 'size': 12})
 
-	ax_diag.set_yticks([ylim[0], chance, ylim[1]])
-	ax_diag.set_yticklabels(['', '', '%.2f' % ylim[1]], fontdict={'family': 'arial', 'size': 12})
+		ax_diag.set_yticks([ylim[0], chance, ylim[1]])
+		ax_diag.set_yticklabels(['', '', '%.2f' % ylim[1]], fontdict={'family': 'arial', 'size': 12})
+	elif my_analysis is 'Loc_TrainLoc_TestLoc':
+		if (ylim < 0) and (chance == 0):
+			ax_diag.set_xticks(np.arange(0., 0.8, .2))
+			ax_diag.set_xticklabels(['T', '0.2', '0.4', '0.6', '0.8'], fontdict={'family': 'arial', 'size': 12})
+
+			ax_diag.set_yticks([ylim[0], chance, ylim[1]])
+			ax_diag.set_yticklabels(['', '', '%.2f' % ylim[1]], fontdict={'family': 'arial', 'size': 12})
+		elif (ylim > 0) and (chance == 0):
+			ax_diag.set_xticks(np.arange(0., 0.8, .2))
+			ax_diag.set_xticklabels(['T', '0.2', '0.4', '0.6', '0.8'], fontdict={'family': 'arial', 'size': 12})
+
+			ax_diag.set_yticks([chance-0.005, chance, ylim[1]])
+			ax_diag.set_yticklabels(['', '', '%.2f' % ylim[1]], fontdict={'family': 'arial', 'size': 12})
 
 	plt.savefig(res_path + '/' + my_analysis + '_' + stat_params + str(tail) + '-diag.tif', format = 'tif', dpi = 300, bbox_inches = 'tight')
 	plt.show(fig_diag)

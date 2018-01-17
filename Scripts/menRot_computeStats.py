@@ -12,7 +12,7 @@ from menRot_base import myStats, parallel_stats
 from scipy import stats
 
 ###Define important variables###
-ListAnalysis = ['Loc_TrainAll_TestAll']
+ListAnalysis = ['Loc_TrainLoc_TestLoc']
 #ListSubjects = ['lm130479', 'am150105', 'cb140229']
 ListSubjects = ['lm130479', 'am150105', 'cb140229', 'nb140272', 'mj100109', 'dp150209', 
 	'ag150338', 'ml140071', 'rm080030', 'bl160191', 'lj150477','bo160176', 'at140305', 
@@ -20,13 +20,19 @@ ListSubjects = ['lm130479', 'am150105', 'cb140229', 'nb140272', 'mj100109', 'dp1
 	'cs150204', 'mp110340', 'lg160230', 'mp150285', 'ef160362', 'ml160216', 'pb160320', 
 	'cc130066', 'in110286', 'ss120102']
 
-beginTime = -0.2
-endTime = 3.496
+filename = '_Train_noRot_Test_noRot'
+
+if ListAnalysis is 'Loc_TrainLoc_TestLoc':
+	beginTime = -0.096
+	endTime = 0.8
+else:
+	beginTime = -0.2
+	endTime = 3.496
+
 tail = 1 #0 = 2-sided, 1 = 1-sided
-
 chance = 0 #for analyses involving 
-
 stat_params = 'permutation'
+baselineCorr = False
 
 
 #Path
@@ -35,15 +41,19 @@ path = '/neurospin/meg/meg_tmp/MenRot_Truebutschek_2016/Decoding'
 ###Load decoding results (GAT, time)
 for analysis in ListAnalysis:
 
-	dat_path = path + '/' + ListAnalysis[0] + '/IndRes'
-	res_path = path + '/' + ListAnalysis[0] + '/GroupRes/Stats'
+	if baselineCorr:
+		dat_path = path + '/' + ListAnalysis[0] + '/IndRes'
+		res_path = path + '/' + ListAnalysis[0] + '/GroupRes/Stats'
+	else:
+		dat_path = path + '/NoBaseline/' + ListAnalysis[0] + '/IndRes'
+		res_path = path + '/NoBaseline/' + ListAnalysis[0] + '/GroupRes/Stats'
 
 	print('load: ' + analysis)
 	all_scores = list() #initialize matrix containing all of GATs
 
 	for subject in ListSubjects:
-		score = np.load(dat_path + '/' + subject + '_Train_All_Test_All-score.npy') #load actual data
-		time = np.load(dat_path + '/' + subject + '_Train_All_Test_All-time.npy') #load timing info
+		score = np.load(dat_path + '/' + subject + filename + '-score.npy') #load actual data
+		time = np.load(dat_path + '/' + subject + filename + '-time.npy') #load timing info
 		all_scores.append(score) #matrix: NSubs x NTrain x NTest
 
 		#Check whether time and data have the same axis
